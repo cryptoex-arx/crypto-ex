@@ -1,97 +1,125 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# cryptoEx
 
-# Getting Started
+A React Native (CLI, TypeScript) application. This repository currently contains
+the **project foundation only**: architecture, tooling, navigation skeleton,
+theme, and shared UI primitives. No application features are implemented yet.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Prerequisites
 
-## Step 1: Start Metro
+- Node.js `>= 22.11.0` and npm
+- JDK 17 and the Android SDK (`ANDROID_HOME` configured) for Android builds
+- Xcode + CocoaPods (macOS only) for iOS builds
+- Follow the React Native
+  [environment setup guide](https://reactnative.dev/docs/set-up-your-environment)
+  for the "React Native CLI" path
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Installation
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+```bash
+npm install
+```
 
-```sh
-# Using npm
+Create your local environment file (see [Environment](#environment)):
+
+```bash
+cp .env.example .env
+```
+
+iOS only, from a macOS machine:
+
+```bash
+bundle install && bundle exec pod install --project-directory=ios
+```
+
+## Running the app
+
+Start Metro in one terminal:
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+Then build and launch:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Development commands
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+| Command                | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `npm start`            | Start the Metro dev server                         |
+| `npm run start:reset`  | Start Metro with a cleared cache (after env edits) |
+| `npm run android`      | Build and run the Android app                      |
+| `npm run ios`          | Build and run the iOS app                          |
+| `npm run typecheck`    | TypeScript check (`tsc --noEmit`)                  |
+| `npm run lint`         | ESLint                                             |
+| `npm run lint:fix`     | ESLint with auto-fix                               |
+| `npm run format`       | Format with Prettier                               |
+| `npm run format:check` | Verify formatting                                  |
+| `npm test`             | Jest test suite                                    |
+| `npm run validate`     | typecheck + lint + format check + tests            |
 
-## Step 3: Modify your app
+## Environment
 
-Now that you have successfully run the app, let's make changes!
+Environment values are loaded by
+[`react-native-dotenv`](https://github.com/goatandsheep/react-native-dotenv)
+(a Babel plugin — no native module) and inlined at build time.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+| File               | Used when                                    |
+| ------------------ | -------------------------------------------- |
+| `.env`             | Always, as the base values                   |
+| `.env.development` | `NODE_ENV=development` (the default)         |
+| `.env.production`  | `NODE_ENV=production` (release bundling)     |
+| `.env.example`     | Committed template — documents required keys |
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Only `.env.example` is committed; every other `.env*` file is git-ignored.
+Never put secrets in `.env.example`, and never read `@env` outside
+[`src/config/env.ts`](src/config/env.ts) — that module is the single typed
+source of configuration.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+Metro caches transformed modules, so after editing an env file restart with
+`npm run start:reset`.
 
-## Congratulations! :tada:
+## Build commands
 
-You've successfully run and modified your React Native App. :partying_face:
+Android release APK/bundle (run from the `android` directory):
 
-### Now what?
+```bash
+./gradlew assembleRelease
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```bash
+./gradlew bundleRelease
+```
 
-# Troubleshooting
+iOS release builds are produced from Xcode (`Product → Archive`) using the
+`Release` configuration.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## Architecture
 
-# Learn More
+```text
+src/
+├── assets/          Static images and fonts
+├── components/
+│   ├── common/      Composite shared components (error boundary, error/empty states)
+│   └── ui/          Presentational primitives (Button, Text, Input, Screen, LoadingIndicator)
+├── config/          Environment configuration (the only reader of `@env`)
+├── constants/       Shared constant values and user-facing copy
+├── hooks/           Reusable hooks
+├── navigation/      Navigators and navigation types
+├── screens/         Screen components grouped by flow (auth, main)
+├── services/api/    HTTP transport and API error normalisation
+├── store/           Application-level state (React Context + reducer)
+├── theme/           Colors and typography
+├── types/           Shared TypeScript types
+└── utils/           Generic helpers (logger)
+```
 
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+See [docs/architecture.md](docs/architecture.md) for the decisions behind this
+structure and the conventions to follow when adding features.

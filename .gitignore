@@ -40,6 +40,18 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
+*.log
+
+# Environment files — never commit secrets. `.env.example` documents the shape.
+.env
+.env.*
+!.env.example
+
+# Editors / IDEs
+.vscode/
+!.vscode/extensions.json
+*.swp
+*~
 
 # fastlane
 #
