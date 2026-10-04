@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -10,79 +9,84 @@ import type { IconName } from '../../../components/ui/icons';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Screen, TAB_SCREEN_EDGES } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { useMoney } from '../../../hooks/useMoney';
+import { usePortfolio } from '../../../hooks/usePortfolio';
+import { useStore } from '../../../hooks/useStore';
 import { useTheme } from '../../../hooks/useTheme';
-import type { MainTabScreenProps } from '../../../navigation/types';
+import type {
+  MainTabScreenProps,
+  ParamlessRoute,
+} from '../../../navigation/types';
+import { useOpenRoute } from '../../../navigation/useOpenRoute';
+import { settingsStore, updateSettings } from '../../../services/settings';
+import { formatNumber, formatPercent } from '../../../utils/format';
 import { styles } from './styles';
 
 const HIDDEN_VALUE = '••••••';
+const INR_COLOR = '#1B8A5A';
+const OTHERS_COLOR = '#FFB020';
+/** Slices before the rest are grouped as "Others". */
+const TOP_SLICES = 3;
 
-const QUICK_ACTIONS: readonly {
+type QuickAction = {
   label: string;
   icon?: IconName;
   glyph?: string;
   tone?: 'success' | 'danger';
-}[] = [
-  { label: 'Add INR', glyph: '₹' },
-  { label: 'Deposit', icon: 'arrow-down', tone: 'success' },
-  { label: 'Withdraw', icon: 'arrow-up', tone: 'danger' },
-  { label: 'Transfer', icon: 'transfer' },
+} & ({ route: ParamlessRoute } | { select: 'deposit' | 'withdraw' });
+
+const QUICK_ACTIONS: readonly QuickAction[] = [
+  { label: 'Add INR', glyph: '₹', route: 'AddInr' },
+  { label: 'Deposit', icon: 'arrow-down', tone: 'success', select: 'deposit' },
+  { label: 'Withdraw', icon: 'arrow-up', tone: 'danger', select: 'withdraw' },
+  { label: 'Transfer', icon: 'transfer', route: 'Transfer' },
 ];
-
-const ALLOCATION = [
-  { label: 'BTC', percent: 65, color: '#F7931A' },
-  { label: 'ETH', percent: 18, color: '#627EEA' },
-  { label: 'SOL', percent: 12, color: '#9945FF' },
-  { label: 'Others', percent: 5, color: '#FFB020' },
-] as const;
-
-const ASSETS = [
-  {
-    symbol: 'B',
-    name: 'Bitcoin',
-    color: '#F7931A',
-    holding: '0.0142 BTC',
-    value: '₹99,845',
-    change: '+₹2,340',
-    up: true,
-  },
-  {
-    symbol: 'E',
-    name: 'Ethereum',
-    color: '#627EEA',
-    holding: '0.45 ETH',
-    value: '₹18,234',
-    change: '-₹412',
-    up: false,
-  },
-  {
-    symbol: 'S',
-    name: 'Solana',
-    color: '#9945FF',
-    holding: '2.5 SOL',
-    value: '₹5,521',
-    change: '+₹890',
-    up: true,
-  },
-  {
-    symbol: 'T',
-    name: 'USDT',
-    color: '#26A17B',
-    holding: '12.40 USDT',
-    value: '₹982',
-    change: '₹0',
-    up: true,
-  },
-] as const;
 
 const DONUT_RADIUS = 46;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 
 /** Total balance, allocation breakdown and per-asset holdings. */
-export function PortfolioScreen(_props: MainTabScreenProps<'Portfolio'>) {
+export function PortfolioScreen({
+  navigation,
+}: MainTabScreenProps<'Portfolio'>) {
   const theme = useTheme();
-  const [visible, setVisible] = useState(true);
+  const money = useMoney();
+  const portfolio = usePortfolio();
+  const openRoute = useOpenRoute();
+  const { hideBalances } = useStore(settingsStore);
+  const show = (text: string) => (hideBalances ? HIDDEN_VALUE : text);
 
+  const slices = [
+    { label: 'INR', value: portfolio.inrBalance, color: INR_COLOR },
+    ...portfolio.assets.map(asset => ({
+      label: asset.coin.symbol,
+      value: asset.value,
+      color: asset.coin.color ?? theme.colors.textMuted,
+    })),
+    ...(portfolio.futuresValue > 0
+      ? [
+          {
+            label: 'Futures',
+            value: portfolio.futuresValue,
+            color: theme.colors.primary,
+          },
+        ]
+      : []),
+  ].sort((a, b) => b.value - a.value);
+  const top = slices.slice(0, TOP_SLICES);
+  const others = slices.slice(TOP_SLICES).reduce((sum, s) => sum + s.value, 0);
+  const allocation = [
+    ...top,
+    ...(others > 0
+      ? [{ label: 'Others', value: others, color: OTHERS_COLOR }]
+      : []),
+  ].map(slice => ({
+    ...slice,
+    percent: portfolio.total > 0 ? (slice.value / portfolio.total) * 100 : 0,
+  }));
   let sweptPercent = 0;
+
+  const up = portfolio.dayChange >= 0;
 
   return (
     <Screen edges={TAB_SCREEN_EDGES}>
@@ -91,126 +95,191 @@ export function PortfolioScreen(_props: MainTabScreenProps<'Portfolio'>) {
         trailing={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={visible ? 'Hide balances' : 'Show balances'}
+            accessibilityLabel={
+              hideBalances ? 'Show balances' : 'Hide balances'
+            }
             hitSlop={10}
-            onPress={() => setVisible(current => !current)}
+            onPress={() => updateSettings({ hideBalances: !hideBalances })}
           >
             <Icon name="eye" size={18} color={theme.colors.textMuted} />
           </Pressable>
         }
       />
+
       <ScrollView contentContainerStyle={styles.content}>
         <Text variant="overline" tone="muted" style={styles.balanceLabel}>
           TOTAL BALANCE
         </Text>
         <Text variant="display" style={styles.balance}>
-          {visible ? '₹1,24,582.40' : HIDDEN_VALUE}
+          {show(money.format(portfolio.total))}
         </Text>
-        <Text variant="body" tone="muted" style={styles.balanceAlt}>
-          {visible ? '≈ $1,481.93' : HIDDEN_VALUE}
-        </Text>
-        <Text variant="label" tone="success" style={styles.change}>
-          ▲ ₹4.46 +0.76% today
+        <Text
+          variant="label"
+          tone={up ? 'success' : 'danger'}
+          style={styles.change}
+        >
+          {up ? '▲ ' : '▼ '}
+          {show(money.formatSigned(portfolio.dayChange))}{' '}
+          {formatPercent(portfolio.dayChangePercent)} today
         </Text>
 
         <View style={styles.actions}>
           {QUICK_ACTIONS.map(action => (
-            <Card key={action.label} style={styles.action}>
-              <View>
-                {action.glyph ? (
-                  <Text variant="subtitle" style={styles.actionGlyph}>
-                    {action.glyph}
-                  </Text>
-                ) : (
-                  <Icon
-                    name={action.icon as IconName}
-                    size={18}
-                    color={
-                      action.tone === 'success'
-                        ? theme.colors.success
-                        : action.tone === 'danger'
-                        ? theme.colors.danger
-                        : theme.colors.primary
-                    }
-                  />
-                )}
-              </View>
-              <Text variant="caption" style={styles.actionLabel}>
-                {action.label}
-              </Text>
-            </Card>
+            <Pressable
+              key={action.label}
+              accessibilityRole="button"
+              style={styles.actionPressable}
+              onPress={() =>
+                'route' in action
+                  ? openRoute(action.route)
+                  : navigation.navigate('SelectAsset', { mode: action.select })
+              }
+            >
+              <Card style={styles.action}>
+                <View>
+                  {action.glyph ? (
+                    <Text variant="subtitle" style={styles.actionGlyph}>
+                      {action.glyph}
+                    </Text>
+                  ) : (
+                    <Icon
+                      name={action.icon!}
+                      size={18}
+                      color={
+                        action.tone === 'success'
+                          ? theme.colors.success
+                          : action.tone === 'danger'
+                          ? theme.colors.danger
+                          : theme.colors.primary
+                      }
+                    />
+                  )}
+                </View>
+                <Text variant="caption" style={styles.actionLabel}>
+                  {action.label}
+                </Text>
+              </Card>
+            </Pressable>
           ))}
         </View>
 
-        <Card style={styles.allocation}>
-          <View style={styles.donut}>
-            <Svg width={96} height={96} viewBox="0 0 120 120">
-              {ALLOCATION.map(slice => {
-                const length = (slice.percent / 100) * DONUT_CIRCUMFERENCE;
-                const offset = (-sweptPercent / 100) * DONUT_CIRCUMFERENCE;
-                sweptPercent += slice.percent;
-
-                return (
-                  <Circle
-                    key={slice.label}
-                    cx={60}
-                    cy={60}
-                    r={DONUT_RADIUS}
-                    stroke={slice.color}
-                    strokeWidth={14}
-                    fill="none"
-                    strokeDasharray={
-                      length + ' ' + (DONUT_CIRCUMFERENCE - length)
-                    }
-                    strokeDashoffset={offset}
-                    transform="rotate(-90 60 60)"
-                  />
-                );
-              })}
-            </Svg>
-            <View style={styles.donutCenter}>
-              <Text variant="caption" tone="muted">
-                Total
-              </Text>
-              <Text variant="label" style={styles.donutTotal}>
-                {visible ? '₹1.24L' : HIDDEN_VALUE}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.legend}>
-            {ALLOCATION.map(slice => (
-              <View key={slice.label} style={styles.legendRow}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: slice.color }]}
-                />
-                <Text variant="body" style={styles.legendLabel}>
-                  {slice.label}
+        {portfolio.total > 0 ? (
+          <Card style={styles.allocation}>
+            <View style={styles.donut}>
+              <Svg width={96} height={96} viewBox="0 0 120 120">
+                {allocation.map(slice => {
+                  const length = (slice.percent / 100) * DONUT_CIRCUMFERENCE;
+                  const offset = (-sweptPercent / 100) * DONUT_CIRCUMFERENCE;
+                  sweptPercent += slice.percent;
+                  return (
+                    <Circle
+                      key={slice.label}
+                      cx={60}
+                      cy={60}
+                      r={DONUT_RADIUS}
+                      stroke={slice.color}
+                      strokeWidth={14}
+                      fill="none"
+                      strokeDasharray={
+                        length + ' ' + (DONUT_CIRCUMFERENCE - length)
+                      }
+                      strokeDashoffset={offset}
+                      transform="rotate(-90 60 60)"
+                    />
+                  );
+                })}
+              </Svg>
+              <View style={styles.donutCenter}>
+                <Text variant="caption" tone="muted">
+                  Assets
                 </Text>
-                <Text variant="body" tone="muted">
-                  {slice.percent}%
+                <Text variant="label" style={styles.donutTotal}>
+                  {slices.filter(slice => slice.value > 0).length}
                 </Text>
               </View>
-            ))}
-          </View>
-        </Card>
+            </View>
+            <View style={styles.legend}>
+              {allocation.map(slice => (
+                <View key={slice.label} style={styles.legendRow}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: slice.color }]}
+                  />
+                  <Text variant="body" style={styles.legendLabel}>
+                    {slice.label}
+                  </Text>
+                  <Text variant="body" tone="muted">
+                    {formatNumber(slice.percent, 1)}%
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        ) : null}
 
-        <Text variant="subtitle" style={styles.assetsTitle}>
-          My Assets
-        </Text>
+        <View style={styles.assetsHeader}>
+          <Text variant="subtitle" style={styles.assetsTitle}>
+            My Assets
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Transactions')}
+          >
+            <Text variant="label" tone="primary">
+              History
+            </Text>
+          </Pressable>
+        </View>
         <Card>
-          {ASSETS.map((asset, index) => (
+          <ListRow
+            leading={<CoinAvatar symbol="₹" color={INR_COLOR} />}
+            title="Indian Rupee"
+            subtitle={'Available ' + show(money.format(portfolio.availableInr))}
+            value={show(money.format(portfolio.inrBalance))}
+            showChevron
+            divider
+            onPress={() =>
+              navigation.navigate('AssetDetail', { coinId: 'inr' })
+            }
+          />
+          {portfolio.assets.map(asset => (
             <ListRow
-              key={asset.name}
-              leading={<CoinAvatar symbol={asset.symbol} color={asset.color} />}
-              title={asset.name}
-              subtitle={asset.holding}
-              value={visible ? asset.value : HIDDEN_VALUE}
-              meta={visible ? asset.change : undefined}
-              metaTone={asset.up ? 'success' : 'danger'}
-              divider={index < ASSETS.length - 1}
+              key={asset.coin.id}
+              leading={
+                <CoinAvatar
+                  symbol={asset.coin.symbol}
+                  color={asset.coin.color}
+                />
+              }
+              title={asset.coin.name}
+              subtitle={
+                show(formatNumber(asset.quantity, 8)) + ' ' + asset.coin.symbol
+              }
+              value={show(money.format(asset.value))}
+              meta={
+                hideBalances
+                  ? undefined
+                  : money.formatSigned(asset.pnl) +
+                    (asset.invested > 0
+                      ? ' (' +
+                        formatPercent((asset.pnl / asset.invested) * 100) +
+                        ')'
+                      : '')
+              }
+              metaTone={asset.pnl >= 0 ? 'success' : 'danger'}
+              divider
+              onPress={() =>
+                navigation.navigate('AssetDetail', { coinId: asset.coin.id })
+              }
             />
           ))}
+          <ListRow
+            icon="trending-up"
+            title="Futures Wallet"
+            subtitle="USDT margin + unrealised P&L"
+            value={show(money.format(portfolio.futuresValue))}
+            showChevron
+            onPress={() => navigation.navigate('Futures')}
+          />
         </Card>
       </ScrollView>
     </Screen>

@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
 import { Card } from '../../../components/ui/Card';
@@ -7,22 +7,33 @@ import { Icon } from '../../../components/ui/Icon';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
-import { APP_BUILD, APP_VERSION } from '../../../constants/app';
+import { APP_BUILD, APP_VERSION, WEBSITE_URL } from '../../../constants/app';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import { logger } from '../../../utils/logger';
 import { styles } from './styles';
 
 const POLICIES = [
-  { title: 'About CryptoEx', subtitle: 'Our story and mission' },
-  { title: 'Privacy Policy', subtitle: 'How we handle your data' },
-  { title: 'Terms & Conditions', subtitle: 'Rules governing usage' },
+  { title: 'About CryptoEx', subtitle: 'Our story and mission', path: 'about' },
+  {
+    title: 'Privacy Policy',
+    subtitle: 'How we handle your data',
+    path: 'privacy',
+  },
+  {
+    title: 'Terms & Conditions',
+    subtitle: 'Rules governing usage',
+    path: 'terms',
+  },
   {
     title: 'Listing / Delisting Policy',
     subtitle: 'How coins are added or removed',
+    path: 'listing-policy',
   },
   {
     title: 'Refund / Cancellation Policy',
     subtitle: 'Eligible refund scenarios',
+    path: 'refund-policy',
   },
 ] as const;
 
@@ -66,6 +77,11 @@ export function AboutScreen({ navigation }: AppStackScreenProps<'About'>) {
               subtitle={policy.subtitle}
               divider={index < POLICIES.length - 1}
               trailing={<Icon name="external" size={18} />}
+              onPress={() =>
+                Linking.openURL(WEBSITE_URL + '/' + policy.path).catch(error =>
+                  logger.warn('Unable to open ' + policy.path, error),
+                )
+              }
             />
           ))}
         </Card>

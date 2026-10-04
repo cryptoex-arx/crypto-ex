@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, ScrollView, Switch, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
@@ -9,14 +8,18 @@ import { InfoBanner } from '../../../components/ui/InfoBanner';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { useStore } from '../../../hooks/useStore';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import {
+  settingsStore,
+  type ThemePreference,
+  updateSettings,
+} from '../../../services/settings';
 import { styles } from './styles';
 
-type ThemeChoice = 'light' | 'dark' | 'system';
-
 const THEME_OPTIONS: readonly {
-  value: ThemeChoice;
+  value: ThemePreference;
   label: string;
   icon: IconName;
 }[] = [
@@ -25,17 +28,12 @@ const THEME_OPTIONS: readonly {
   { value: 'system', label: 'System', icon: 'smartphone' },
 ];
 
-/**
- * Theme and display preferences. The choice is local to the screen until a
- * preferences store exists — the app still follows the OS colour scheme.
- */
+/** Theme and display preferences, saved on the device. */
 export function AppearanceScreen({
   navigation,
 }: AppStackScreenProps<'Appearance'>) {
   const theme = useTheme();
-  const [choice, setChoice] = useState<ThemeChoice>('light');
-  const [compactList, setCompactList] = useState(false);
-  const [showBalance, setShowBalance] = useState(true);
+  const { theme: choice, compactList, hideBalances } = useStore(settingsStore);
 
   const switchColors = {
     false: theme.colors.disabled,
@@ -58,7 +56,7 @@ export function AppearanceScreen({
                 key={option.value}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                onPress={() => setChoice(option.value)}
+                onPress={() => updateSettings({ theme: option.value })}
                 style={[
                   styles.themeCard,
                   {
@@ -116,19 +114,21 @@ export function AppearanceScreen({
               <Switch
                 accessibilityLabel="Compact coin list"
                 value={compactList}
-                onValueChange={setCompactList}
+                onValueChange={value => updateSettings({ compactList: value })}
                 trackColor={switchColors}
               />
             }
           />
           <ListRow
             title="Show Portfolio Balance"
-            subtitle="Display total value on home"
+            subtitle="Show balances on Home and Portfolio"
             trailing={
               <Switch
                 accessibilityLabel="Show portfolio balance"
-                value={showBalance}
-                onValueChange={setShowBalance}
+                value={!hideBalances}
+                onValueChange={value =>
+                  updateSettings({ hideBalances: !value })
+                }
                 trackColor={switchColors}
               />
             }
@@ -136,7 +136,7 @@ export function AppearanceScreen({
         </Card>
 
         <View style={styles.banner}>
-          <InfoBanner message="Dark mode is coming soon. System theme follows your device setting." />
+          <InfoBanner message="System follows your device's light or dark setting." />
         </View>
       </ScrollView>
     </Screen>

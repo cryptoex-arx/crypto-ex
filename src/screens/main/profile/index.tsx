@@ -2,27 +2,45 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { showToast } from '../../../components/common/Toast';
 import { Button } from '../../../components/ui/Button';
-import { Icon } from '../../../components/ui/Icon';
 import { InfoBanner } from '../../../components/ui/InfoBanner';
 import { Input } from '../../../components/ui/Input';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { formatMobileNumber } from '../../../constants/auth';
+import { useStore } from '../../../hooks/useStore';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import { type Gender, updateProfile, userStore } from '../../../services/user';
 import { styles } from './styles';
 
 const GENDERS = ['Male', 'Female', 'Other'] as const;
 
-const DATE_OF_BIRTH = '15 Aug 1995';
-const MOBILE_NUMBER = '+91 98765 43210';
-
 /** Editable personal details; identity fields stay read-only after KYC. */
 export function ProfileScreen({ navigation }: AppStackScreenProps<'Profile'>) {
   const theme = useTheme();
-  const [fullName, setFullName] = useState('Rahul Sharma');
-  const [email, setEmail] = useState('rahul@email.com');
-  const [gender, setGender] = useState<string>('Male');
+  const { profile } = useStore(userStore);
+  const [fullName, setFullName] = useState(profile.fullName);
+  const [email, setEmail] = useState(profile.email);
+  const [gender, setGender] = useState<Gender>(profile.gender);
+  const [error, setError] = useState<string>();
+  const initials = profile.fullName
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const onSave = () => {
+    const result = updateProfile({ fullName, email, gender });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    showToast('Profile saved', 'success');
+    navigation.goBack();
+  };
 
   const readOnlyStyle = [
     styles.readOnlyInput,
@@ -40,33 +58,16 @@ export function ProfileScreen({ navigation }: AppStackScreenProps<'Profile'>) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.avatarBlock}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Change profile photo"
+          <View
+            style={[
+              styles.avatar,
+              { backgroundColor: theme.colors.surfaceStrong },
+            ]}
           >
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.colors.surfaceStrong },
-              ]}
-            >
-              <Icon name="user" size={32} />
-            </View>
-            <View
-              style={[
-                styles.cameraBadge,
-                {
-                  backgroundColor: theme.colors.primary,
-                  borderColor: theme.colors.background,
-                },
-              ]}
-            >
-              <Icon name="camera" size={12} color={theme.colors.textInverted} />
-            </View>
-          </Pressable>
-          <Text variant="caption" tone="muted" style={styles.avatarHint}>
-            Tap to change photo
-          </Text>
+            <Text variant="title" tone="primary">
+              {initials}
+            </Text>
+          </View>
         </View>
 
         <Text variant="overline" tone="muted" style={styles.sectionLabel}>
@@ -104,7 +105,7 @@ export function ProfileScreen({ navigation }: AppStackScreenProps<'Profile'>) {
           <Input
             accessibilityLabel="Date of birth"
             editable={false}
-            value={DATE_OF_BIRTH}
+            value={profile.dateOfBirth}
             style={readOnlyStyle}
           />
         </View>
@@ -157,7 +158,7 @@ export function ProfileScreen({ navigation }: AppStackScreenProps<'Profile'>) {
           <Input
             accessibilityLabel="Mobile number"
             editable={false}
-            value={MOBILE_NUMBER}
+            value={formatMobileNumber(profile.mobileNumber)}
             style={readOnlyStyle}
           />
         </View>
@@ -166,11 +167,13 @@ export function ProfileScreen({ navigation }: AppStackScreenProps<'Profile'>) {
           <InfoBanner message="Mobile number cannot be changed. Contact support to update." />
         </View>
 
-        <Button
-          label="Save Changes"
-          style={styles.save}
-          onPress={navigation.goBack}
-        />
+        {error ? (
+          <Text variant="caption" tone="danger" style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
+
+        <Button label="Save Changes" style={styles.save} onPress={onSave} />
       </ScrollView>
     </Screen>
   );

@@ -64,17 +64,78 @@ export const styles = StyleSheet.create({
   summary: {
     marginTop: 16,
   },
-  summaryRow: {
+  tickerCard: {
+    marginTop: 12,
+  },
+  walletRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    marginTop: 12,
+    marginHorizontal: 4,
+  },
+  grow: {
+    flex: 1,
+  },
+  bold: {
+    fontFamily: fonts.bold,
+  },
+  percent: {
+    marginTop: 8,
+  },
+  targets: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  submit: {
+    marginTop: 16,
+    minHeight: 46,
+  },
+  tabs: {
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  positionCard: {
+    marginBottom: 10,
+  },
+  positionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  closeButton: {
+    marginTop: 10,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  summaryDivider: {
+  divider: {
     borderBottomWidth: 1,
   },
-  summaryValue: {
-    fontFamily: fonts.bold,
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginVertical: 12,
+  },
+  stepButton: {
+    width: 56,
+  },
+  stepValue: {
+    minWidth: 72,
+    textAlign: 'center',
+  },
+  presets: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  warning: {
+    marginTop: 10,
   },
 });

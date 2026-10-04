@@ -14,4 +14,11 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 4,
   },
+  divider: {
+    borderBottomWidth: 1,
+  },
+  answer: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
 });

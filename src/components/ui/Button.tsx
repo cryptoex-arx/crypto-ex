@@ -12,7 +12,8 @@ import { Icon } from './Icon';
 import type { IconName } from './icons';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'secondary';
+/** `success` / `danger` are the filled Buy / Sell buttons. */
+export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger';
 
 export interface ButtonProps
   extends Pick<PressableProps, 'onPress' | 'testID' | 'accessibilityLabel'> {
@@ -37,7 +38,13 @@ export function Button({
 }: ButtonProps) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
-  const isPrimary = variant === 'primary';
+  const isPrimary = variant !== 'secondary';
+  const fill =
+    variant === 'success'
+      ? theme.colors.success
+      : variant === 'danger'
+      ? theme.colors.danger
+      : theme.colors.primary;
   const contentColor = isPrimary
     ? theme.colors.textInverted
     : theme.colors.text;
@@ -53,12 +60,16 @@ export function Button({
         styles.container,
         {
           backgroundColor: isPrimary
-            ? pressed
+            ? pressed && variant === 'primary'
               ? theme.colors.primaryPressed
-              : theme.colors.primary
+              : fill
             : 'transparent',
           borderColor: isPrimary ? 'transparent' : theme.colors.border,
-          opacity: isDisabled ? 0.6 : 1,
+          opacity: isDisabled
+            ? 0.6
+            : pressed && variant !== 'primary'
+            ? 0.85
+            : 1,
         },
         style,
       ]}

@@ -1,6 +1,6 @@
 /**
- * Placeholder market data for the Home and Markets tabs. Replace with the
- * ticker feed once the API layer is wired up.
+ * Placeholder coin list. Prices and changes seed the simulated feed in
+ * `src/services/market`; replace both with the ticker API once it exists.
  */
 export interface MarketCoin {
   id: string;
@@ -9,12 +9,14 @@ export interface MarketCoin {
   pair: string;
   /** Brand colour of the coin. Omitted when there is no logo yet. */
   color?: string;
-  price: string;
-  volume: string;
-  /** Numeric volume in USD, used only for sorting. */
+  /** Last traded price in INR. The seed for the simulated live feed. */
+  price: number;
+  /** 24h volume in USD. */
   volumeUsd: number;
-  change: string;
-  up: boolean;
+  /** 24h change in percent, e.g. `-1.02`. */
+  change24h: number;
+  /** Stablecoin: the simulated feed barely moves it. */
+  stable?: boolean;
 }
 
 export const MARKET_COINS: readonly MarketCoin[] = [
@@ -23,11 +25,9 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     symbol: 'TRX',
     name: 'TRON',
     pair: 'TRX/USDT',
-    price: '₹32.57',
-    volume: '$2M',
+    price: 32.57,
     volumeUsd: 2_000_000,
-    change: '+0.56%',
-    up: true,
+    change24h: 0.56,
   },
   {
     id: 'doge',
@@ -35,33 +35,27 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     name: 'Dogecoin',
     pair: 'DOGE/USDT',
     color: '#C2A633',
-    price: '₹8.14',
-    volume: '$3M',
+    price: 8.14,
     volumeUsd: 3_000_000,
-    change: '+0.71%',
-    up: true,
+    change24h: 0.71,
   },
   {
     id: 'arb',
     symbol: 'ARB',
     name: 'Arbitrum',
     pair: 'ARB/USDT',
-    price: '₹8.39',
-    volume: '$367K',
+    price: 8.39,
     volumeUsd: 367_000,
-    change: '+0.80%',
-    up: true,
+    change24h: 0.8,
   },
   {
     id: 'dot',
     symbol: 'DOT',
     name: 'Polkadot',
     pair: 'DOT/USDT',
-    price: '₹81.48',
-    volume: '$8M',
+    price: 81.48,
     volumeUsd: 8_000_000,
-    change: '+1.38%',
-    up: true,
+    change24h: 1.38,
   },
   {
     id: 'btc',
@@ -69,11 +63,9 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     name: 'Bitcoin',
     pair: 'BTC/USDT',
     color: '#F7931A',
-    price: '₹74.78L',
-    volume: '$164M',
+    price: 7_478_000,
     volumeUsd: 164_000_000,
-    change: '+0.66%',
-    up: true,
+    change24h: 0.66,
   },
   {
     id: 'ada',
@@ -81,33 +73,27 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     name: 'Cardano',
     pair: 'ADA/USDT',
     color: '#0033AD',
-    price: '₹19.30',
-    volume: '$1M',
+    price: 19.3,
     volumeUsd: 1_000_000,
-    change: '+0.84%',
-    up: true,
+    change24h: 0.84,
   },
   {
     id: 'inj',
     symbol: 'INJ',
     name: 'Injective',
     pair: 'INJ/USDT',
-    price: '₹496.78',
-    volume: '$719K',
+    price: 496.78,
     volumeUsd: 719_000,
-    change: '+3.30%',
-    up: true,
+    change24h: 3.3,
   },
   {
     id: 'atom',
     symbol: 'ATOM',
     name: 'Cosmos',
     pair: 'ATOM/USDT',
-    price: '₹141.67',
-    volume: '$416K',
+    price: 141.67,
     volumeUsd: 416_000,
-    change: '-1.02%',
-    up: false,
+    change24h: -1.02,
   },
   {
     id: 'eth',
@@ -115,11 +101,9 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     name: 'Ethereum',
     pair: 'ETH/USDT',
     color: '#627EEA',
-    price: '₹2.35L',
-    volume: '$41M',
+    price: 235_000,
     volumeUsd: 41_000_000,
-    change: '+1.01%',
-    up: true,
+    change24h: 1.01,
   },
   {
     id: 'sol',
@@ -127,10 +111,23 @@ export const MARKET_COINS: readonly MarketCoin[] = [
     name: 'Solana',
     pair: 'SOL/USDT',
     color: '#9945FF',
-    price: '₹13,240',
-    volume: '$12M',
+    price: 13_240,
     volumeUsd: 12_000_000,
-    change: '+4.10%',
-    up: true,
+    change24h: 4.1,
+  },
+  {
+    id: 'usdt',
+    symbol: 'USDT',
+    name: 'Tether',
+    pair: 'USDT/INR',
+    color: '#26A17B',
+    price: 84.5,
+    volumeUsd: 250_000_000,
+    change24h: 0.12,
+    stable: true,
   },
 ];
+
+export function findCoin(coinId: string): MarketCoin | undefined {
+  return MARKET_COINS.find(coin => coin.id === coinId);
+}

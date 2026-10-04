@@ -8,8 +8,13 @@ import { Icon } from '../../../components/ui/Icon';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { useAccount } from '../../../hooks/useAccount';
+import { useStore } from '../../../hooks/useStore';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import { maskAccountNumber } from '../../../services/account';
+import { type KycStatus, userStore } from '../../../services/user';
+import { formatDateTime } from '../../../utils/format';
 import { styles } from './styles';
 
 const LIMITS = [
@@ -18,21 +23,53 @@ const LIMITS = [
   { value: '∞', label: 'Crypto' },
 ] as const;
 
-const STEPS = [
-  { title: 'PAN Verification', subtitle: 'ABCDE1234F', done: true },
-  { title: 'Aadhaar Verification', subtitle: 'Verified via OTP', done: true },
-  { title: 'Bank Account', subtitle: 'HDFC ••••4321', done: true },
-  { title: 'Selfie & Liveness', subtitle: 'Passed', done: true },
-  {
-    title: 'Level 2 — Advanced',
-    subtitle: 'Required for ₹10L+ withdrawals',
-    done: false,
-  },
-] as const;
+const STATUS: Record<
+  KycStatus,
+  { title: string; badge: string; tone: 'success' | 'neutral' }
+> = {
+  notStarted: { title: 'Not verified', badge: 'Pending', tone: 'neutral' },
+  inReview: { title: 'Under review', badge: 'In review', tone: 'neutral' },
+  verified: { title: 'KYC Verified', badge: '✓ Active', tone: 'success' },
+};
 
-/** KYC level, limits and the state of each verification step. */
+/** KYC status, limits and the state of each verification step. */
 export function KycScreen({ navigation }: AppStackScreenProps<'Kyc'>) {
   const theme = useTheme();
+  const { kyc } = useStore(userStore);
+  const { bankAccounts } = useAccount();
+  const bank = bankAccounts.find(item => item.primary);
+  const status = STATUS[kyc.status];
+  const verified = kyc.status === 'verified';
+
+  const steps = [
+    {
+      title: 'PAN Verification',
+      subtitle: kyc.pan
+        ? kyc.pan.slice(0, 5) + '••••' + kyc.pan.slice(-1)
+        : 'Permanent Account Number',
+      done: kyc.pan !== undefined,
+    },
+    {
+      title: 'Aadhaar Verification',
+      subtitle: kyc.aadhaarLast4
+        ? 'XXXX XXXX ' + kyc.aadhaarLast4 + ' · OTP verified'
+        : 'Verified with an OTP',
+      done: kyc.aadhaarLast4 !== undefined,
+    },
+    {
+      title: 'Selfie & Liveness',
+      subtitle:
+        kyc.status === 'notStarted' ? 'Face match with Aadhaar' : 'Passed',
+      done: kyc.status !== 'notStarted',
+    },
+    {
+      title: 'Bank Account',
+      subtitle: bank
+        ? bank.bankName + ' ' + maskAccountNumber(bank.accountNumber)
+        : 'An account in your name',
+      done: bank !== undefined,
+    },
+  ];
 
   return (
     <Screen>
@@ -40,48 +77,67 @@ export function KycScreen({ navigation }: AppStackScreenProps<'Kyc'>) {
       <ScrollView contentContainerStyle={styles.content}>
         <Card>
           <View style={styles.statusRow}>
-            <Icon name="shield-check" size={22} color={theme.colors.success} />
+            <Icon
+              name={
+                verified
+                  ? 'shield-check'
+                  : kyc.status === 'inReview'
+                  ? 'clock'
+                  : 'shield'
+              }
+              size={22}
+              color={verified ? theme.colors.success : theme.colors.textMuted}
+            />
             <View style={styles.statusBody}>
               <Text variant="subtitle" style={styles.statusTitle}>
-                Level 2 Verified
+                {status.title}
               </Text>
               <Text
                 variant="caption"
                 tone="muted"
                 style={styles.statusSubtitle}
               >
-                Powered by Signzy
+                {verified && kyc.verifiedAt
+                  ? 'Since ' + formatDateTime(kyc.verifiedAt)
+                  : kyc.status === 'inReview'
+                  ? 'Usually takes a few seconds'
+                  : 'Needed to deposit and withdraw'}
               </Text>
             </View>
-            <Badge label="✓ Active" tone="success" />
+            <Badge label={status.badge} tone={status.tone} />
           </View>
-
-          <View
-            style={[styles.limits, { borderTopColor: theme.colors.border }]}
-          >
-            {LIMITS.map(limit => (
-              <View key={limit.label} style={styles.limit}>
-                <Text variant="body" style={styles.limitValue}>
-                  {limit.value}
-                </Text>
-                <Text variant="caption" tone="muted" style={styles.limitLabel}>
-                  {limit.label}
-                </Text>
-              </View>
-            ))}
-          </View>
+          {verified ? (
+            <View
+              style={[styles.limits, { borderTopColor: theme.colors.border }]}
+            >
+              {LIMITS.map(limit => (
+                <View key={limit.label} style={styles.limit}>
+                  <Text variant="body" style={styles.limitValue}>
+                    {limit.value}
+                  </Text>
+                  <Text
+                    variant="caption"
+                    tone="muted"
+                    style={styles.limitLabel}
+                  >
+                    {limit.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </Card>
 
         <Text variant="overline" tone="muted" style={styles.sectionLabel}>
           VERIFICATION STEPS
         </Text>
         <Card>
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <ListRow
               key={step.title}
               title={step.title}
               subtitle={step.subtitle}
-              divider={index < STEPS.length - 1}
+              divider={index < steps.length - 1}
               leading={
                 <View
                   style={[
@@ -102,22 +158,23 @@ export function KycScreen({ navigation }: AppStackScreenProps<'Kyc'>) {
                 </View>
               }
               trailing={
-                step.done ? undefined : <Badge label="Pending" tone="success" />
+                step.done ? undefined : <Badge label="Pending" tone="neutral" />
               }
             />
           ))}
         </Card>
 
-        <Button
-          label="Start KYC Verification"
-          icon="shield"
-          style={styles.cta}
-          onPress={() => undefined}
-        />
+        {kyc.status === 'notStarted' ? (
+          <Button
+            label="Start KYC Verification"
+            icon="shield"
+            style={styles.cta}
+            onPress={() => navigation.navigate('KycFlow')}
+          />
+        ) : null}
 
         <Text variant="caption" tone="muted" style={styles.footnote}>
-          Powered by DataSpike · Documents are encrypted and never stored on our
-          servers
+          Documents are encrypted and never stored on this device
         </Text>
       </ScrollView>
     </Screen>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Share, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
 import { Card } from '../../../components/ui/Card';
@@ -9,8 +9,13 @@ import { ListRow } from '../../../components/ui/ListRow';
 import { Screen } from '../../../components/ui/Screen';
 import { SegmentedControl } from '../../../components/ui/SegmentedControl';
 import { Text, type TextTone } from '../../../components/ui/Text';
+import { findCoin } from '../../../constants/markets';
+import { useAccount } from '../../../hooks/useAccount';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import type { SpotOrder } from '../../../services/account';
+import { formatDateTime, formatInr } from '../../../utils/format';
+import { logger } from '../../../utils/logger';
 import { styles } from './styles';
 
 type ReportTab = 'trade' | 'tds' | 'certificates';
@@ -20,6 +25,35 @@ interface ReportRow {
   subtitle: string;
   value: string;
   valueTone: TextTone;
+  /** Export body; rows without one share their summary line. */
+  csv?: string;
+}
+
+/** TDS rate on the sale value of crypto (Section 194S). */
+const TDS_RATE = 0.01;
+
+/** Start year of the Indian financial year (April–March) holding `time`. */
+function financialYearStart(time: number): number {
+  const date = new Date(time);
+  return date.getMonth() >= 3 ? date.getFullYear() : date.getFullYear() - 1;
+}
+
+function toCsv(orders: readonly SpotOrder[]): string {
+  const header =
+    'Date,Pair,Side,Type,Quantity,Price (INR),Value (INR),Fee (INR)';
+  const lines = orders.map(order =>
+    [
+      formatDateTime(order.closedAt ?? order.createdAt).replace(',', ''),
+      (findCoin(order.coinId)?.symbol ?? order.coinId) + '/INR',
+      order.side,
+      order.type,
+      order.quantity,
+      order.price.toFixed(2),
+      (order.price * order.quantity).toFixed(2),
+      order.fee.toFixed(2),
+    ].join(','),
+  );
+  return [header, ...lines].join('\n');
 }
 
 const TABS = [
@@ -85,7 +119,51 @@ export function TaxReportsScreen({
 }: AppStackScreenProps<'TaxReports'>) {
   const theme = useTheme();
   const [tab, setTab] = useState<ReportTab>('trade');
-  const rows = REPORTS[tab];
+  const { orders } = useAccount();
+
+  const yearStart = financialYearStart(Date.now());
+  const yearLabel = 'FY ' + yearStart + '-' + String(yearStart + 1).slice(2);
+  const yearOrders = orders.filter(
+    order =>
+      order.status === 'filled' &&
+      financialYearStart(order.closedAt ?? order.createdAt) === yearStart,
+  );
+  const turnover = yearOrders.reduce(
+    (sum, order) => sum + order.price * order.quantity,
+    0,
+  );
+  const sellValue = yearOrders
+    .filter(order => order.side === 'sell')
+    .reduce((sum, order) => sum + order.price * order.quantity, 0);
+  const csv = toCsv(yearOrders);
+  const currentRows: Record<ReportTab, ReportRow[]> = {
+    trade: [
+      {
+        title: yearLabel + ' (current)',
+        subtitle: yearOrders.length + ' trades · turnover',
+        value: formatInr(turnover),
+        valueTone: 'default',
+        csv,
+      },
+    ],
+    tds: [
+      {
+        title: yearLabel + ' (current)',
+        subtitle: 'TDS at 1% of sell value',
+        value: formatInr(sellValue * TDS_RATE),
+        valueTone: 'default',
+        csv,
+      },
+    ],
+    certificates: [],
+  };
+  const rows = [...currentRows[tab], ...REPORTS[tab]];
+
+  const onExport = (row: ReportRow) =>
+    Share.share({
+      title: row.title,
+      message: row.csv ?? row.title + ' · ' + row.subtitle + ' · ' + row.value,
+    }).catch(error => logger.warn('Unable to open the share sheet', error));
 
   return (
     <Screen>
@@ -112,6 +190,7 @@ export function TaxReportsScreen({
                     accessibilityRole="button"
                     accessibilityLabel={'Download ' + row.title + ' as CSV'}
                     hitSlop={8}
+                    onPress={() => onExport(row)}
                     style={styles.download}
                   >
                     <Icon

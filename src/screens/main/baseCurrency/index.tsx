@@ -2,17 +2,22 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { showToast } from '../../../components/common/Toast';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { InfoBanner } from '../../../components/ui/InfoBanner';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { useStore } from '../../../hooks/useStore';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import {
+  type BaseCurrency,
+  settingsStore,
+  updateSettings,
+} from '../../../services/settings';
 import { styles } from './styles';
-
-type CurrencyCode = 'INR' | 'USDT';
 
 const CURRENCIES = [
   {
@@ -34,13 +39,20 @@ export function BaseCurrencyScreen({
   navigation,
 }: AppStackScreenProps<'BaseCurrency'>) {
   const theme = useTheme();
-  const [selected, setSelected] = useState<CurrencyCode>('INR');
+  const { baseCurrency } = useStore(settingsStore);
+  const [selected, setSelected] = useState<BaseCurrency>(baseCurrency);
+
+  const onSave = () => {
+    updateSettings({ baseCurrency: selected });
+    showToast('Balances now shown in ' + selected, 'success');
+    navigation.goBack();
+  };
 
   return (
     <Screen>
       <ScreenHeader title="Base Currency" onBack={navigation.goBack} />
       <ScrollView contentContainerStyle={styles.content}>
-        <InfoBanner message="All prices, balances and P&L will be shown in your selected base currency." />
+        <InfoBanner message="Portfolio, Home and asset balances and P&L are shown in this currency. Trading pairs keep their own quote currency." />
 
         <Card>
           {CURRENCIES.map((currency, index) => (
@@ -88,7 +100,7 @@ export function BaseCurrencyScreen({
           ))}
         </Card>
 
-        <Button label="Save Preference" onPress={navigation.goBack} />
+        <Button label="Save Preference" onPress={onSave} />
       </ScrollView>
     </Screen>
   );

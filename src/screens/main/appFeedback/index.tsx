@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { showToast } from '../../../components/common/Toast';
 import { Button } from '../../../components/ui/Button';
 import { Chip } from '../../../components/ui/Chip';
 import { Icon } from '../../../components/ui/Icon';
 import { Input } from '../../../components/ui/Input';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { APP_VERSION, SUPPORT_EMAIL } from '../../../constants/app';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AppStackScreenProps } from '../../../navigation/types';
+import { logger } from '../../../utils/logger';
 import { styles } from './styles';
 
 const CATEGORIES = [
@@ -32,6 +35,33 @@ export function AppFeedbackScreen({
   const [message, setMessage] = useState('');
 
   const canSubmit = rating > 0 && message.trim().length > 0;
+
+  /** No feedback API yet: hand the message to the mail app, prefilled. */
+  const onSubmit = () => {
+    const subject =
+      'App feedback · ' + (category ?? 'General') + ' · ' + rating + '/5';
+    const body = message.trim() + '\n\n— CryptoEx v' + APP_VERSION;
+    Linking.openURL(
+      'mailto:' +
+        SUPPORT_EMAIL +
+        '?subject=' +
+        encodeURIComponent(subject) +
+        '&body=' +
+        encodeURIComponent(body),
+    )
+      .then(() => {
+        showToast('Thanks for your feedback!', 'success');
+        navigation.goBack();
+      })
+      .catch(error => {
+        logger.warn('Unable to open the mail app', error);
+        showToast(
+          'No mail app found',
+          'danger',
+          'Write to us at ' + SUPPORT_EMAIL,
+        );
+      });
+  };
 
   return (
     <Screen>
@@ -101,7 +131,7 @@ export function AppFeedbackScreen({
           icon="send"
           disabled={!canSubmit}
           style={styles.submit}
-          onPress={navigation.goBack}
+          onPress={onSubmit}
         />
       </ScrollView>
     </Screen>

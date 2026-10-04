@@ -13,6 +13,8 @@ import {
 } from '../../../constants/auth';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AuthStackScreenProps } from '../../../navigation/types';
+import { logActivity } from '../../../services/security';
+import { setMobileNumber } from '../../../services/user';
 import { useAppState } from '../../../store/useAppState';
 import { styles } from './styles';
 
@@ -63,6 +65,12 @@ export function OtpVerificationScreen({
   const onResend = () => {
     setCode('');
     setResendToken(current => current + 1);
+  };
+
+  const onVerify = () => {
+    setMobileNumber(route.params.mobileNumber);
+    logActivity('Signed in', 'This device · OTP');
+    dispatch({ type: 'session/signIn' });
   };
 
   return (
@@ -141,7 +149,7 @@ export function OtpVerificationScreen({
           label="Verify & Continue"
           disabled={!isComplete}
           style={styles.action}
-          onPress={() => dispatch({ type: 'session/signIn' })}
+          onPress={onVerify}
         />
 
         <View style={styles.resend}>

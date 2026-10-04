@@ -18,20 +18,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cameraBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  avatarHint: {
-    marginTop: 10,
-  },
   sectionLabel: {
     marginTop: 8,
     marginBottom: 12,
@@ -68,5 +54,8 @@ export const styles = StyleSheet.create({
   },
   save: {
     marginTop: 18,
+  },
+  error: {
+    marginTop: 8,
   },
 });

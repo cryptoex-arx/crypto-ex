@@ -208,4 +208,9 @@ export const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: fonts.bold,
   },
+  web3: {
+    flex: 1,
+    padding: 16,
+    gap: 16,
+  },
 });

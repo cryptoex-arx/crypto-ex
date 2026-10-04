@@ -1,13 +1,12 @@
 import { StyleSheet } from 'react-native';
 
-import { fonts } from '../../theme';
+const MARK_SIZE = 64;
 
-/** Both rings are absolutely positioned, so the wrapper has to carry the size. */
-const OUTER_RING_SIZE = 208;
-const INNER_RING_SIZE = 172;
+/** Ripples are absolutely positioned, so the wrapper has to carry their full size. */
+const RIPPLE_SIZE = 168;
 
-/** Absolute children ignore the safe-area padding, so the screen adds the inset. */
-export const FOOTER_SPACING = 40;
+/** Ripples start just behind the mark and grow out to RIPPLE_SIZE. */
+export const RIPPLE_START_SCALE = MARK_SIZE / RIPPLE_SIZE;
 
 export const styles = StyleSheet.create({
   container: {
@@ -17,58 +16,43 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   rings: {
-    width: OUTER_RING_SIZE,
-    height: OUTER_RING_SIZE,
+    width: RIPPLE_SIZE,
+    height: RIPPLE_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  outerRing: {
+  ripple: {
     position: 'absolute',
-    width: OUTER_RING_SIZE,
-    height: OUTER_RING_SIZE,
-    borderRadius: OUTER_RING_SIZE / 2,
-    borderWidth: 2,
-  },
-  innerRing: {
-    position: 'absolute',
-    width: INNER_RING_SIZE,
-    height: INNER_RING_SIZE,
-    borderRadius: INNER_RING_SIZE / 2,
-    borderWidth: 1,
+    width: RIPPLE_SIZE,
+    height: RIPPLE_SIZE,
+    borderRadius: RIPPLE_SIZE / 2,
+    borderWidth: 1.5,
   },
   mark: {
-    width: 88,
-    height: 88,
-    borderRadius: 22,
+    width: MARK_SIZE,
+    height: MARK_SIZE,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-  },
-  markLabel: {
-    fontFamily: fonts.bold,
   },
   wordmark: {
-    marginTop: 20,
-    fontSize: 32,
-    lineHeight: 40,
+    marginTop: 8,
+    fontSize: 26,
+    lineHeight: 32,
   },
   tagline: {
-    marginTop: 6,
-    fontSize: 14,
-    letterSpacing: 3,
+    marginTop: 4,
+    fontSize: 11,
+    letterSpacing: 2.5,
   },
   dots: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 40,
+    gap: 6,
+    marginTop: 28,
   },
   dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  footer: {
-    position: 'absolute',
-    letterSpacing: 0.4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

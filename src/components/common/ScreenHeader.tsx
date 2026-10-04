@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   side: {
-    width: 36,
+    minWidth: 36,
     justifyContent: 'center',
   },
   trailing: {

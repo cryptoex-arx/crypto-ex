@@ -13,9 +13,6 @@ export const styles = StyleSheet.create({
   balance: {
     marginTop: 4,
   },
-  balanceAlt: {
-    marginTop: 2,
-  },
   change: {
     marginTop: 6,
     fontFamily: fonts.semiBold,
@@ -25,8 +22,10 @@ export const styles = StyleSheet.create({
     gap: 10,
     marginTop: 16,
   },
-  action: {
+  actionPressable: {
     flex: 1,
+  },
+  action: {
     alignItems: 'center',
     gap: 8,
     paddingVertical: 10,
@@ -75,9 +74,14 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.semiBold,
   },
-  assetsTitle: {
+  assetsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 18,
     marginBottom: 12,
+  },
+  assetsTitle: {
     fontFamily: fonts.bold,
   },
 });

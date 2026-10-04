@@ -18,4 +18,12 @@ buildscript {
     }
 }
 
+// Libraries that don't set ndkVersion (e.g. react-native-trading-charts) would
+// otherwise fall back to AGP's default NDK; build them all with the app's one.
+subprojects { subproject ->
+    subproject.plugins.withId("com.android.library") {
+        subproject.android.ndkVersion = rootProject.ext.ndkVersion
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"

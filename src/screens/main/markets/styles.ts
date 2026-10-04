@@ -8,11 +8,23 @@ export const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 14,
   },
+  tabs: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  tab: {
+    paddingBottom: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabLabel: {
+    fontFamily: fonts.bold,
+  },
   filters: {
     flexDirection: 'row',
     gap: 10,
   },
-  // Mirrors `row` (padding, gap, avatar width) so headers sit over values.
+  // Mirrors `row` (padding, gap) so headers sit over values.
   columns: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -22,6 +34,13 @@ export const styles = StyleSheet.create({
   },
   avatarColumn: {
     width: 30,
+  },
+  starColumn: {
+    width: 16,
+    alignItems: 'center',
+  },
+  alignRight: {
+    textAlign: 'right',
   },
   list: {
     flex: 1,
@@ -36,6 +55,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
+  },
+  rowCompact: {
+    paddingVertical: 6,
   },
   coinColumn: {
     flex: 1,
@@ -60,7 +82,6 @@ export const styles = StyleSheet.create({
   },
   changeHeader: {
     width: 72,
-    textAlign: 'right',
   },
   changePill: {
     paddingHorizontal: 8,
@@ -72,5 +93,8 @@ export const styles = StyleSheet.create({
   },
   empty: {
     paddingTop: 40,
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });

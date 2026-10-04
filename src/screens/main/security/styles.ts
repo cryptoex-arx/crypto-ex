@@ -6,4 +6,12 @@ export const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 12,
   },
+  sectionLabel: {
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  footnote: {
+    marginHorizontal: 4,
+    textAlign: 'center',
+  },
 });
